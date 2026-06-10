@@ -61,4 +61,26 @@ class Transaction(models.Model):
 
     def __str__(self):
         return f"{self.transaction_type} of  ${self.amount} on {self.account.name}"
-    
+
+class Loan(models.Model):
+    LOAN_STATUS_CHOICES = (
+        ('PENDING', 'Pending Approval'),
+        ('ACTIVE', 'Active/Disbursed'),
+        ('REPAID', 'Fully Repaid'),
+        ('DEFAULTED','Defaulted'),
+    )    
+
+    id =  models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    account = models.ForeignKey(Account, on_delete=models.PROTECT, related_name='loans')
+
+    principal_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    interest_rate = models.DecimalField(max_digits=5, decimal_places=4)
+
+    status =  models.CharField(max_length=15, choices=LOAN_STATUS_CHOICES, default='PENDING')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Loan {self.id} ({self.status}) for {self.account.name}"
