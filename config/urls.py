@@ -21,4 +21,3 @@ urlpatterns = [
     path('admin/', admin.site.get_admin_urls() if hasattr(admin.site, 'get_admin_urls') else admin.site.urls),# type: ignore
     path('api/', include('ledger.urls'))
 ]
-
