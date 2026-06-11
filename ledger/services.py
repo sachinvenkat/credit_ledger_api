@@ -1,6 +1,6 @@
 from decimal import Decimal
 from django.db import transaction
-from .models import Account, Transaction
+from .models import Account, Transaction, Loan
 
 def  process_ledger_entry(account_id, amount:Decimal, transaction_type: str):
     # 1. atomic() ensures all-or-nothing execution
@@ -29,3 +29,22 @@ def  process_ledger_entry(account_id, amount:Decimal, transaction_type: str):
         )
 
         return txn
+    
+
+def approve_and_disburse_loan(loan_id):
+    with transaction.atomic():
+
+        loan = Loan.objects.select_for_update().get(id=loan_id)
+
+        if loan.status != 'PENDING':
+            raise ValueError(f"Loan cannot be disbursed. Current loan status is {loan.status}.")
+        
+        loan.status = 'ACTIVE'
+        loan.save() 
+
+        process_ledger_entry(
+            account_id=loan.account.id,
+            amount = loan.principal_amount,
+            transaction_type='CREDIT'
+        )
+        return loan
