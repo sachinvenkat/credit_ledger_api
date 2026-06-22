@@ -1,5 +1,4 @@
 from multiprocessing import process
-
 from django.shortcuts import render
 from decimal import Decimal, InvalidOperation
 from rest_framework.views import APIView
@@ -7,6 +6,10 @@ from rest_framework.response import Response
 from rest_framework import status
 from .services import process_ledger_entry
 from .serializers import AccountSerializer
+
+from .models import Loan
+from .serializers import AccountSerializer, LoanSearilizer
+from .services import process_ledger_entry, approve_and_disburse_loan
 
 class DepositWithdrawAPIView(APIView):
 
@@ -65,7 +68,42 @@ class DepositWithdrawAPIView(APIView):
                 {"error":"Internal server error processing ledger."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
- 
+
+class LoanDisbursalAPIView(APIView):
+    def post(self, request, loan_id):
+        try:
+
+            loan = approve_and_disburse_loan(loan_id)
+
+            serializer = LoanSearilizer(loan)
+            return Response(
+                {
+                    "message": "Loan successfully apporved and disbursed",
+                    "loan_details": serializer.data
+                },
+                status=status.HTTP_200_OK
+            )
+        
+        except ValueError as e:
+            #
+            return Response(
+                {"error": str(e)}, status=status.HTTP_400_BAD_REQUEST 
+            )
+        except Loan.DoesNotExist:
+            return Response (
+                {"error": "Loan not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception:
+            return Response(
+                {"error", "Internal serve error during disbursal."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            ) 
+
+
+
+
+
+
 
 
         
