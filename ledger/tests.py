@@ -4,6 +4,7 @@ from rest_framework.test import APITestCase
 from rest_framework import status
 from .models import Account
 from django.urls import reverse
+from .models import Loan
 # Create your tests here.
 class LedgerAPITestCase(APITestCase):
     def setUp(self):
@@ -42,3 +43,36 @@ class LedgerAPITestCase(APITestCase):
         # 2. Assert the database balance was NOT altered
         self.account.refresh_from_db()
         self.assertEqual(self.account.balance, Decimal('100.00'))
+
+class LoanAPITests(APITestCase):
+    def setUp(self):
+
+        self.account = Account.objects.create(name="Borrower Wallet", balance=Decimal('100.00'))
+        self.loan  = Loan.objects.create(
+            account=self.account,
+            principal_amount =  Decimal('5000.000'),
+            interest_rate = Decimal('0.1050'),
+            status = 'PENDING'
+        )
+        self.url = reverse('loan_disburse', kwargs={'loan_id': self.loan.id})
+
+    def test_successful_loan_disbursal_update_status_and_ledger(self):
+
+        response = self.client.post(self.url, format = 'json')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.loan.refresh_from_db()
+        self.account.refresh_from_db()
+        self.assertEqual(self.loan.status, 'ACTIVE')
+        self.assertEqual(self.account.balance, Decimal('5100.00'))
+
+    def test_disbursing_already_active_loan_fails(self):
+        
+        self.loan.status = 'ACTIVE'
+        self.loan.save()
+
+        response =  self.client.post(self.url, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("Loan cannot be disbursed", response.data["error"])
