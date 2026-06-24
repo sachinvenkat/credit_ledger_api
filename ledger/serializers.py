@@ -12,9 +12,9 @@ class AccountSerializer(serializers.ModelSerializer):
 class LoanSearilizer(serializers.ModelSerializer):
     class Meta:
         model = Loan
-        fields = ['id', 'principal_amount', 'interest_rate', 'status', 'created_at']
+        fields = ['id', 'principal_amount', 'outstanding_balance', 'interest_rate', 'status', 'created_at']
         # Critical Security Measure
-        read_only_fileds = ['status']
+        read_only_fileds = ['status', 'outstanding_balance']
 
 class RepaymentSerializer(serializers.Serializer):
     payment_amount = serializers.DecimalField(max_digits=12, decimal_places=2)
