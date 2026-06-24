@@ -15,3 +15,6 @@ class LoanSearilizer(serializers.ModelSerializer):
         fields = ['id', 'principal_amount', 'interest_rate', 'status', 'created_at']
         # Critical Security Measure
         read_only_fileds = ['status']
+
+class RepaymentSerializer(serializers.Serializer):
+    payment_amount = serializers.DecimalField(max_digits=12, decimal_places=2)

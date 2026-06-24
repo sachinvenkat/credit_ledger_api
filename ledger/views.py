@@ -4,12 +4,9 @@ from decimal import Decimal, InvalidOperation
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .services import process_ledger_entry
-from .serializers import AccountSerializer
-
 from .models import Loan
-from .serializers import AccountSerializer, LoanSearilizer
-from .services import process_ledger_entry, approve_and_disburse_loan
+from .serializers import AccountSerializer, LoanSearilizer, RepaymentSerializer
+from .services import process_ledger_entry, approve_and_disburse_loan, process_loan_repayment
 
 class DepositWithdrawAPIView(APIView):
 
@@ -98,8 +95,38 @@ class LoanDisbursalAPIView(APIView):
                 {"error", "Internal serve error during disbursal."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             ) 
+class LoanRepaymentAPIView(APIView):
 
+    def post(self, request, loan_id):
+        
+        serializer = RepaymentSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        payment_amount = serializer.validated_data['payment_amount']
 
+        try:
+
+            loan = process_loan_repayment(loan_id, payment_amount)
+
+            response_serializer =  LoanSearilizer(loan)
+
+            return Response(
+                {
+                    "message": "Repayment successfully processed.",
+                    "loan_details": response_serializer.data
+                 }
+            )
+        except ValueError:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        except Loan.DoesNotExist:
+            return Response({"error": "loan not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception:
+            return Response(
+                {"error":"Internal server error during repayment"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 
