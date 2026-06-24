@@ -75,6 +75,8 @@ class Loan(models.Model):
     account = models.ForeignKey(Account, on_delete=models.PROTECT, related_name='loans')
 
     principal_amount = models.DecimalField(max_digits=12, decimal_places=2)
+
+    outstanding_balance = models.DecimalField(max_digits=12, decimal_places=2, default= Decimal('0.00'))
     interest_rate = models.DecimalField(max_digits=5, decimal_places=4)
 
     status =  models.CharField(max_length=15, choices=LOAN_STATUS_CHOICES, default='PENDING')

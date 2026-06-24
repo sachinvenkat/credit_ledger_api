@@ -48,3 +48,31 @@ def approve_and_disburse_loan(loan_id):
             transaction_type='CREDIT'
         )
         return loan
+    
+def process_loan_repayment(loan_id, payment_amount: Decimal):
+    with transaction.atomic():
+        loan = Loan.objects.select_for_update().get(id=loan_id)
+
+        if loan.status != 'ACTIVE':
+            raise ValueError(f"Cannot repay loan with status: {loan.status}")
+    
+        if payment_amount <= 0:
+            raise ValueError("Repayment amount must ve strictly positive.")
+        
+        if payment_amount > loan.outstanding_balance:
+            raise ValueError("Repayment amount cannot exceed the outstanding balance.")
+        
+        process_ledger_entry(
+            account_id = loan.account.id,
+            amount =  payment_amount,
+            transaction_type="DEBIT"
+        )
+
+        loan.outstanding_balance -= payment_amount 
+
+        if loan.outstanding_balance == Decimal('0.00'):
+            loan.status =  'REPAID'
+
+        loan.save()
+
+        return loan
